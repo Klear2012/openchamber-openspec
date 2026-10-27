@@ -289,7 +289,7 @@ export function mountController(host: HostClient, appRoot: HTMLElement): () => v
       return `Use your skill tool to load and invoke the openspec-verify-change skill for ${target}.`;
     if (intent === "update")
       return `Use your skill tool to load and invoke the openspec-update-change skill for ${target}.\n\nRevise planning artefacts only, never implement code. If the specs are final, add the doc tasks the verified work calls for (or record an explicit no-doc-change decision); never add doc tasks at plan time.`;
-    return `Use your skill tool to load and invoke the openspec-archive-change skill for ${target}.`;
+    return `Use your skill tool to load and invoke the openspec-archive-change skill for ${target}.\n\nArchive is verify-only: confirm every doc task is done or no-doc-change was recorded, the adr.md manifest is done with any durable files already in adr/, then update the TRACEABILITY row (where the project keeps one) with the real archive folder, add the CHANGELOG Unreleased bullet, touch the behavior docs the change affects (or keep the no-doc-change record), and append the metrics row.`;
   }
 
   async function preparePrompt(
