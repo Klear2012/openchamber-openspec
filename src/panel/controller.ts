@@ -551,13 +551,18 @@ export function mountController(host: HostClient, appRoot: HTMLElement): () => v
     if (unavailableIds.has(change.id)) return;
     readTasks();
     const groups = change.artifacts.filter((item) => item.id !== "tasks");
-    const standard = groups.every((item) => ["proposal", "specs", "design"].includes(item.id));
-    if (standard)
-      groups.sort(
-        (a, b) =>
-          ["proposal", "specs", "design"].indexOf(a.id) -
-          ["proposal", "specs", "design"].indexOf(b.id),
-      );
+    const order = [
+      "research",
+      "proposal",
+      "specs",
+      "design",
+      "adr",
+      "tasks",
+      "findings",
+      "verification",
+    ];
+    const rank = (id: string): number => (order.includes(id) ? order.indexOf(id) : order.length);
+    groups.sort((a, b) => rank(a.id) - rank(b.id));
     void (async () => {
       for (const group of groups) {
         if (!current()) return;

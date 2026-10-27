@@ -6226,10 +6226,14 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     complete: "success"
   };
   var artifactLabels = {
+    research: "Research",
     proposal: "Proposal",
     specs: "Specs",
     design: "Design",
-    tasks: "Tasks"
+    adr: "ADR",
+    tasks: "Tasks",
+    findings: "Findings",
+    verification: "Verification"
   };
   var readiness = {
     done: "Written",
@@ -7597,11 +7601,18 @@ Revise planning artefacts only, never implement code. If the specs are final, ad
       if (unavailableIds.has(change.id)) return;
       readTasks();
       const groups = change.artifacts.filter((item) => item.id !== "tasks");
-      const standard = groups.every((item) => ["proposal", "specs", "design"].includes(item.id));
-      if (standard)
-        groups.sort(
-          (a, b) => ["proposal", "specs", "design"].indexOf(a.id) - ["proposal", "specs", "design"].indexOf(b.id)
-        );
+      const order = [
+        "research",
+        "proposal",
+        "specs",
+        "design",
+        "adr",
+        "tasks",
+        "findings",
+        "verification"
+      ];
+      const rank = (id) => order.includes(id) ? order.indexOf(id) : order.length;
+      groups.sort((a, b) => rank(a.id) - rank(b.id));
       void (async () => {
         for (const group of groups) {
           if (!current()) return;

@@ -30,10 +30,14 @@ const tones = {
   complete: "success",
 } as const;
 const artifactLabels: Record<string, string> = {
+  research: "Research",
   proposal: "Proposal",
   specs: "Specs",
   design: "Design",
+  adr: "ADR",
   tasks: "Tasks",
+  findings: "Findings",
+  verification: "Verification",
 };
 const readiness = {
   done: "Written",
