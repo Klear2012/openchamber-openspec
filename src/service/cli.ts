@@ -61,9 +61,15 @@ export async function runOpenSpec(
   if (remainingMs <= 0)
     return { ok: false, error: serviceError("CLI_TIMEOUT", "OpenSpec request timed out.", 504) };
   return await new Promise((complete) => {
+    // Windows npm installs expose the CLI as openspec.cmd, which bare
+    // CreateProcess cannot execute (ENOENT), and direct .cmd spawn is rejected
+    // (EINVAL). Route through the shell on win32 only. Dynamic args reaching
+    // here are constants or kebab-case-validated change names; the project
+    // directory travels via cwd, never the command line.
     const child = spawn(options.binary ?? "openspec", [...args, "--json"], {
       cwd: directory,
       stdio: ["ignore", "pipe", "pipe"],
+      shell: process.platform === "win32",
     });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];

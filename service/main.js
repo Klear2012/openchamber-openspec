@@ -7452,7 +7452,8 @@ async function runOpenSpec(directory, args, remainingMs = COMMAND_TIMEOUT_MS, op
   return await new Promise((complete) => {
     const child = (0, import_node_child_process.spawn)(options.binary ?? "openspec", [...args, "--json"], {
       cwd: directory,
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: process.platform === "win32"
     });
     const stdout = [];
     const stderr = [];
