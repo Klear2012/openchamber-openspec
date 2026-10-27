@@ -37,20 +37,45 @@ function requiredArtifactIds(change: ChangeSummary): Set<string> {
   return required;
 }
 
+function requiredArtifactIdsFull(change: ChangeSummary): Set<string> {
+  const byId = new Map(change.artifacts.map((artifact) => [artifact.id, artifact]));
+  const dependents = new Map<string, string[]>();
+  for (const artifact of change.artifacts)
+    for (const dep of artifact.requires) {
+      const list = dependents.get(dep);
+      if (list) list.push(artifact.id);
+      else dependents.set(dep, [artifact.id]);
+    }
+  const required = new Set<string>();
+  const visit = (id: string): void => {
+    if (required.has(id)) return;
+    required.add(id);
+    byId.get(id)?.requires.forEach(visit);
+    dependents.get(id)?.forEach(visit);
+  };
+  change.applyRequires.forEach(visit);
+  return required;
+}
+
 export function deriveChange(change: ChangeSummary): DerivedChange {
   const required = requiredArtifactIds(change);
-  const applicable = change.artifacts.filter((artifact) => required.has(artifact.id));
+  const requiredFull = requiredArtifactIdsFull(change);
+  const applicable = change.artifacts.filter((artifact) => requiredFull.has(artifact.id));
   const completedArtifacts = applicable.filter(
     (artifact) => artifact.status === "done" || artifact.status === "skipped",
   ).length;
+  const pendingUpstream = change.artifacts.some(
+    (artifact) =>
+      required.has(artifact.id) && artifact.status !== "done" && artifact.status !== "skipped",
+  );
   const pendingCondition = applicable.some(
     (artifact) => artifact.status !== "done" && artifact.status !== "skipped",
   );
-  const stage: Stage = pendingCondition
+  const stage: Stage = pendingUpstream
     ? "planning"
     : change.totalTasks === 0 || change.completedTasks === 0
       ? "ready"
-      : change.completedTasks === change.totalTasks
+      : change.completedTasks === change.totalTasks && !pendingCondition
         ? "complete"
         : "progress";
 

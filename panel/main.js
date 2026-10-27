@@ -1750,16 +1750,39 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     change.applyRequires.forEach(visit);
     return required;
   }
+  function requiredArtifactIdsFull(change) {
+    const byId = new Map(change.artifacts.map((artifact) => [artifact.id, artifact]));
+    const dependents = /* @__PURE__ */ new Map();
+    for (const artifact of change.artifacts)
+      for (const dep of artifact.requires) {
+        const list = dependents.get(dep);
+        if (list) list.push(artifact.id);
+        else dependents.set(dep, [artifact.id]);
+      }
+    const required = /* @__PURE__ */ new Set();
+    const visit = (id) => {
+      if (required.has(id)) return;
+      required.add(id);
+      byId.get(id)?.requires.forEach(visit);
+      dependents.get(id)?.forEach(visit);
+    };
+    change.applyRequires.forEach(visit);
+    return required;
+  }
   function deriveChange(change) {
     const required = requiredArtifactIds(change);
-    const applicable = change.artifacts.filter((artifact) => required.has(artifact.id));
+    const requiredFull = requiredArtifactIdsFull(change);
+    const applicable = change.artifacts.filter((artifact) => requiredFull.has(artifact.id));
     const completedArtifacts = applicable.filter(
       (artifact) => artifact.status === "done" || artifact.status === "skipped"
     ).length;
+    const pendingUpstream = change.artifacts.some(
+      (artifact) => required.has(artifact.id) && artifact.status !== "done" && artifact.status !== "skipped"
+    );
     const pendingCondition = applicable.some(
       (artifact) => artifact.status !== "done" && artifact.status !== "skipped"
     );
-    const stage = pendingCondition ? "planning" : change.totalTasks === 0 || change.completedTasks === 0 ? "ready" : change.completedTasks === change.totalTasks ? "complete" : "progress";
+    const stage = pendingUpstream ? "planning" : change.totalTasks === 0 || change.completedTasks === 0 ? "ready" : change.completedTasks === change.totalTasks && !pendingCondition ? "complete" : "progress";
     return {
       ...change,
       stage,
