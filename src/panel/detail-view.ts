@@ -57,7 +57,7 @@ export function mountDetailView(
     selectTasks: () => void;
     retryTasks: () => void;
     retryDocument: (artifact: string, selector: string) => void;
-    action: (intent: "primary" | "verify" | "explore") => void;
+    action: (intent: "primary" | "verify" | "explore" | "update") => void;
     delete: () => void;
     refresh: () => void;
     openUrl: (url: string) => void;
@@ -195,6 +195,13 @@ export function mountDetailView(
     size: "sm",
     onClick: () => callbacks.action("verify"),
   });
+  const updateRoot = document.createElement("span");
+  const update = mountButton(updateRoot, {
+    label: "update",
+    variant: "secondary",
+    size: "sm",
+    onClick: () => callbacks.action("update"),
+  });
   const exploreRoot = document.createElement("span");
   const explore = mountButton(exploreRoot, {
     label: "explore",
@@ -202,7 +209,7 @@ export function mountDetailView(
     size: "sm",
     onClick: () => callbacks.action("explore"),
   });
-  footer.append(exploreRoot, verifyRoot, actionRoot);
+  footer.append(exploreRoot, verifyRoot, updateRoot, actionRoot);
   body.append(toolbar, unavailable, refreshIssue, content);
   shell.append(header, body, footer);
   root.append(shell);
@@ -297,8 +304,10 @@ export function mountDetailView(
       exploreRoot.hidden = state.change.stage !== "planning";
       explore.update({ disabled: state.unavailable });
       deleteAction.update({ disabled: state.unavailable });
-      verifyRoot.hidden = state.change.stage !== "complete";
+      verifyRoot.hidden = state.change.stage !== "progress" && state.change.stage !== "complete";
       verify.update({ disabled: state.unavailable });
+      updateRoot.hidden = state.change.stage !== "progress" && state.change.stage !== "complete";
+      update.update({ disabled: state.unavailable });
       currentOwner = taskArtifact(state.change);
       const items = state.change.artifacts.map((item) => ({
         id: tabId(item.id),
@@ -430,6 +439,7 @@ export function mountDetailView(
       action.dispose();
       explore.dispose();
       verify.dispose();
+      update.dispose();
       tabControl.dispose();
       tasksView.dispose();
       shell.remove();

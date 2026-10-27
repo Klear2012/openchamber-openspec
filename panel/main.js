@@ -2503,7 +2503,14 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
           size: "sm",
           onClick: () => cards.get(id)?.current.action("verify")
         });
-        actionRoot.prepend(exploreRoot, verifyRoot);
+        const updateRoot = document.createElement("span");
+        const update = mountButton(updateRoot, {
+          label: "update",
+          variant: "secondary",
+          size: "sm",
+          onClick: () => cards.get(id)?.current.action("update")
+        });
+        actionRoot.prepend(exploreRoot, verifyRoot, updateRoot);
         title.addEventListener("click", () => cards.get(id)?.current.open());
         const status = document.createElement("p");
         status.className = "stale-label";
@@ -2522,6 +2529,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
           exploreRoot,
           verify,
           verifyRoot,
+          update,
+          updateRoot,
           status,
           current: item
         };
@@ -2547,8 +2556,10 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       });
       entry.explore.update({ disabled: item.unavailable });
       entry.exploreRoot.hidden = change.stage !== "planning";
-      entry.verifyRoot.hidden = change.stage !== "complete";
+      entry.verifyRoot.hidden = change.stage !== "progress" && change.stage !== "complete";
       entry.verify.update({ disabled: item.unavailable });
+      entry.updateRoot.hidden = change.stage !== "progress" && change.stage !== "complete";
+      entry.update.update({ disabled: item.unavailable });
       entry.status.hidden = !item.stale && !item.unavailable;
       if (item.unavailable) entry.status.textContent = `${change.id} is no longer available.`;
       else if (item.stale)
@@ -2610,6 +2621,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
           entry.action.dispose();
           entry.explore.dispose();
           entry.verify.dispose();
+          entry.update.dispose();
           entry.progress.dispose();
           entry.areas.dispose();
           entry.node.remove();
@@ -2646,6 +2658,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
           entry.action.dispose();
           entry.explore.dispose();
           entry.verify.dispose();
+          entry.update.dispose();
           entry.progress.dispose();
           entry.areas.dispose();
         }
@@ -6362,6 +6375,13 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       size: "sm",
       onClick: () => callbacks.action("verify")
     });
+    const updateRoot = document.createElement("span");
+    const update = mountButton(updateRoot, {
+      label: "update",
+      variant: "secondary",
+      size: "sm",
+      onClick: () => callbacks.action("update")
+    });
     const exploreRoot = document.createElement("span");
     const explore = mountButton(exploreRoot, {
       label: "explore",
@@ -6369,7 +6389,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       size: "sm",
       onClick: () => callbacks.action("explore")
     });
-    footer.append(exploreRoot, verifyRoot, actionRoot);
+    footer.append(exploreRoot, verifyRoot, updateRoot, actionRoot);
     body.append(toolbar, unavailable, refreshIssue, content);
     shell.append(header, body, footer);
     root2.append(shell);
@@ -6460,8 +6480,10 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         exploreRoot.hidden = state.change.stage !== "planning";
         explore.update({ disabled: state.unavailable });
         deleteAction.update({ disabled: state.unavailable });
-        verifyRoot.hidden = state.change.stage !== "complete";
+        verifyRoot.hidden = state.change.stage !== "progress" && state.change.stage !== "complete";
         verify.update({ disabled: state.unavailable });
+        updateRoot.hidden = state.change.stage !== "progress" && state.change.stage !== "complete";
+        update.update({ disabled: state.unavailable });
         currentOwner = taskArtifact(state.change);
         const items = state.change.artifacts.map((item) => ({
           id: tabId(item.id),
@@ -6560,6 +6582,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         action.dispose();
         explore.dispose();
         verify.dispose();
+        update.dispose();
         tabControl.dispose();
         tasksView.dispose();
         shell.remove();
@@ -7379,11 +7402,15 @@ Complete all remaining tasks in ${target}, then verify the implementation agains
       }
       if (intent === "verify")
         return `Use your skill tool to load and invoke the openspec-verify-change skill for ${target}.`;
+      if (intent === "update")
+        return `Use your skill tool to load and invoke the openspec-update-change skill for ${target}.
+
+Revise planning artefacts only, never implement code. If the specs are final, add the doc tasks the verified work calls for (or record an explicit no-doc-change decision); never add doc tasks at plan time.`;
       return `Use your skill tool to load and invoke the openspec-archive-change skill for ${target}.`;
     }
     async function preparePrompt(change, captured, originatingEpoch, intent, originatingSession = sessionId) {
       const current = changes.find((item) => item.id === change.id);
-      if (!captured || scope !== captured || epoch !== originatingEpoch || sessionId !== originatingSession || unavailableIds.has(change.id) || !current || intent === "verify" && current.stage !== "complete" || intent === "explore" && current.stage !== "planning" || (intent === "primary" || intent === "worktree") && current.stage !== change.stage)
+      if (!captured || scope !== captured || epoch !== originatingEpoch || sessionId !== originatingSession || unavailableIds.has(change.id) || !current || intent === "verify" && current.stage !== "progress" && current.stage !== "complete" || intent === "update" && current.stage !== "progress" && current.stage !== "complete" || intent === "explore" && current.stage !== "planning" || (intent === "primary" || intent === "worktree") && current.stage !== change.stage)
         return;
       if (intent === "worktree") {
         if (current.stage !== "ready" && current.stage !== "progress") return;

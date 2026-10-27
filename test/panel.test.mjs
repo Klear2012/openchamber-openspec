@@ -3678,6 +3678,7 @@ test("completed board and detail independently prepare Verify and Archive withou
     await card.getByRole("button", { name: "archive", exact: true }).waitFor();
     assert.deepEqual(await card.locator(".card-actions button:visible").allTextContents(), [
       "verify",
+      "update",
       "archive",
     ]);
     assert.equal(

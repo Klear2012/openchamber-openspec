@@ -268,7 +268,10 @@ export function mountController(host: HostClient, appRoot: HTMLElement): () => v
     })();
   }
 
-  function actionPrompt(change: DerivedChange, intent: "primary" | "verify" | "explore"): string {
+  function actionPrompt(
+    change: DerivedChange,
+    intent: "primary" | "verify" | "explore" | "update",
+  ): string {
     const target = `OpenSpec change "${change.id}"`;
     const goal = change.goal?.trim() ? `\nGoal: ${change.goal}` : "";
     if (intent === "explore")
@@ -284,6 +287,8 @@ export function mountController(host: HostClient, appRoot: HTMLElement): () => v
     }
     if (intent === "verify")
       return `Use your skill tool to load and invoke the openspec-verify-change skill for ${target}.`;
+    if (intent === "update")
+      return `Use your skill tool to load and invoke the openspec-update-change skill for ${target}.\n\nRevise planning artefacts only, never implement code. If the specs are final, add the doc tasks the verified work calls for (or record an explicit no-doc-change decision); never add doc tasks at plan time.`;
     return `Use your skill tool to load and invoke the openspec-archive-change skill for ${target}.`;
   }
 
@@ -291,7 +296,7 @@ export function mountController(host: HostClient, appRoot: HTMLElement): () => v
     change: DerivedChange,
     captured: Scope | null,
     originatingEpoch: number,
-    intent: "primary" | "worktree" | "verify" | "explore",
+    intent: "primary" | "worktree" | "verify" | "explore" | "update",
     originatingSession: string | null = sessionId,
   ) {
     const current = changes.find((item) => item.id === change.id);
@@ -302,7 +307,12 @@ export function mountController(host: HostClient, appRoot: HTMLElement): () => v
       sessionId !== originatingSession ||
       unavailableIds.has(change.id) ||
       !current ||
-      (intent === "verify" && current.stage !== "complete") ||
+      (intent === "verify" &&
+        current.stage !== "progress" &&
+        current.stage !== "complete") ||
+      (intent === "update" &&
+        current.stage !== "progress" &&
+        current.stage !== "complete") ||
       (intent === "explore" && current.stage !== "planning") ||
       ((intent === "primary" || intent === "worktree") && current.stage !== change.stage)
     )

@@ -12,7 +12,7 @@ export type BoardCard = {
   unavailable: boolean;
   open: () => void;
   pending?: boolean;
-  action: (intent: "primary" | "worktree" | "verify" | "explore") => void;
+  action: (intent: "primary" | "worktree" | "verify" | "explore" | "update") => void;
 };
 export type BoardState = {
   directory: string | null;
@@ -139,6 +139,8 @@ export function mountBoardView(
       exploreRoot: HTMLElement;
       verify: ReturnType<typeof mountButton>;
       verifyRoot: HTMLElement;
+      update: ReturnType<typeof mountButton>;
+      updateRoot: HTMLElement;
       status: HTMLElement;
       current: BoardCard;
     }
@@ -180,7 +182,14 @@ export function mountBoardView(
         size: "sm",
         onClick: () => cards.get(id)?.current.action("verify"),
       });
-      actionRoot.prepend(exploreRoot, verifyRoot);
+      const updateRoot = document.createElement("span");
+      const update = mountButton(updateRoot, {
+        label: "update",
+        variant: "secondary",
+        size: "sm",
+        onClick: () => cards.get(id)?.current.action("update"),
+      });
+      actionRoot.prepend(exploreRoot, verifyRoot, updateRoot);
       title.addEventListener("click", () => cards.get(id)?.current.open());
       const status = document.createElement("p");
       status.className = "stale-label";
@@ -199,6 +208,8 @@ export function mountBoardView(
         exploreRoot,
         verify,
         verifyRoot,
+        update,
+        updateRoot,
         status,
         current: item,
       };
@@ -224,8 +235,10 @@ export function mountBoardView(
     });
     entry.explore.update({ disabled: item.unavailable });
     entry.exploreRoot.hidden = change.stage !== "planning";
-    entry.verifyRoot.hidden = change.stage !== "complete";
+    entry.verifyRoot.hidden = change.stage !== "progress" && change.stage !== "complete";
     entry.verify.update({ disabled: item.unavailable });
+    entry.updateRoot.hidden = change.stage !== "progress" && change.stage !== "complete";
+    entry.update.update({ disabled: item.unavailable });
     entry.status.hidden = !item.stale && !item.unavailable;
     if (item.unavailable) entry.status.textContent = `${change.id} is no longer available.`;
     else if (item.stale)
@@ -289,6 +302,7 @@ export function mountBoardView(
         entry.action.dispose();
         entry.explore.dispose();
         entry.verify.dispose();
+        entry.update.dispose();
         entry.progress.dispose();
         entry.areas.dispose();
         entry.node.remove();
@@ -337,6 +351,7 @@ export function mountBoardView(
         entry.action.dispose();
         entry.explore.dispose();
         entry.verify.dispose();
+        entry.update.dispose();
         entry.progress.dispose();
         entry.areas.dispose();
       }
